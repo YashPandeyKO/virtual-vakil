@@ -4,6 +4,7 @@ import Analyze from './pages/Analyze';
 import Chat from './pages/Chat';
 import Glossary from './pages/Glossary';
 
+
 function App() {
   return (
     <Router>
