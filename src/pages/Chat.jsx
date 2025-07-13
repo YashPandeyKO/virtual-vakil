@@ -1,19 +1,37 @@
 import { useState } from 'react';
-import chatImage from '../assets/law-chat.png'; // update with your actual image file
+import { chatLawyer } from '../api';
+import chatImage from '../assets/law-chat.png';
 
 export default function Chat() {
   const [msg, setMsg] = useState('');
   const [response, setResponse] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
+  const [context, setContext] = useState(''); // For maintaining conversation context
 
-  const handleAsk = () => {
-    setResponse("This is where your legal assistant will answer!");
+  const handleAsk = async () => {
+    if (!msg.trim()) {
+      alert("Please enter your question");
+      return;
+    }
+
+    setIsLoading(true);
+    try {
+      const result = await chatLawyer(msg, context);
+      setResponse(result.response || result.error);
+      setContext(prev => `${prev}\nUser: ${msg}\nLawyer: ${result.response}`); // Update context
+    } catch (err) {
+      console.error("API Error:", err);
+      setResponse("Failed to get response from the legal assistant. Please try again.");
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (
     <div
       style={{
         backgroundColor: '#eef5ff',
-        minHeight: '200vh',
+        minHeight: '100vh',
         padding: '2rem',
         display: 'flex',
         justifyContent: 'center',
@@ -52,36 +70,62 @@ export default function Chat() {
             border: '1px solid #ccc',
             fontSize: '16px',
           }}
+          onKeyPress={(e) => e.key === 'Enter' && handleAsk()}
         />
         <button
           onClick={handleAsk}
+          disabled={isLoading}
           style={{
             width: '100%',
             padding: '0.6rem',
-            backgroundColor: '#4b6fff',
+            backgroundColor: isLoading ? '#cccccc' : '#4b6fff',
             color: 'white',
             border: 'none',
             borderRadius: '6px',
             fontSize: '15px',
-            cursor: 'pointer',
+            cursor: isLoading ? 'not-allowed' : 'pointer',
           }}
         >
-          Ask
+          {isLoading ? 'Processing...' : 'Ask'}
         </button>
 
         {response && (
-          <div style={{ marginTop: '2rem' }}>
+          <div style={{ 
+            marginTop: '2rem',
+            padding: '1rem',
+            backgroundColor: '#f8f9fa',
+            borderRadius: '8px'
+          }}>
             <h4>📩 <strong>Response:</strong></h4>
-            <p>{response}</p>
+            <p style={{ whiteSpace: 'pre-wrap' }}>{response}</p>
           </div>
         )}
 
         <div style={{ marginTop: '2rem' }}>
           <h4>💬 <strong>Try asking:</strong></h4>
-          <ul>
-            <li>What is the procedure for filing an FIR?</li>
-            <li>Can police arrest without a warrant?</li>
-            <li>How to apply for anticipatory bail?</li>
+          <ul style={{ listStyleType: 'none', padding: 0 }}>
+            {[
+              "What is the procedure for filing an FIR?",
+              "Can police arrest without a warrant?",
+              "How to apply for anticipatory bail?"
+            ].map((question) => (
+              <li 
+                key={question}
+                style={{ 
+                  padding: '0.5rem 0', 
+                  cursor: 'pointer',
+                  color: '#4b6fff',
+                  textDecoration: 'underline'
+                }}
+                onClick={() => {
+                  setMsg(question);
+                  // Auto-focus on input after selecting a question
+                  document.querySelector('input[type="text"]')?.focus();
+                }}
+              >
+                {question}
+              </li>
+            ))}
           </ul>
         </div>
       </div>
